@@ -1,0 +1,9 @@
+{
+  "aps": {
+    "alert": {
+      "title": "Hello world",
+      "subtitle": "Push notification subtitle",
+      "body": "Push notification body"
+    }
+  }
+}
