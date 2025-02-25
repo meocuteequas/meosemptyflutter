@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "863732078811",
+    "project_id": "meosemptyflutter",
+    "storage_bucket": "meosemptyflutter.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:863732078811:android:00dbf140f5c13b940954fe",
+        "android_client_info": {
+          "package_name": "com.example.meosemptyflutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQdUCj_1mCFjZbHjFFv-2QoPfFk0Z-ixg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
