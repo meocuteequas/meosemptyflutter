@@ -1,8 +1,5 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:meosemptyflutter/firebase_options.dart';
 import 'package:meosemptyflutter/scroll_to_hide_widget.dart';
 import 'package:meosemptyflutter/tabs/home_tab.dart';
 import 'package:meosemptyflutter/tabs/search_tab.dart';
@@ -11,17 +8,6 @@ import 'package:meosemptyflutter/tabs/profile_tab.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  var messaging = FirebaseMessaging.instance;
-
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
   runApp(const MainApp());
 }
 

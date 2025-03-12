@@ -1,8 +1,5 @@
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
-import 'package:meosemptyflutter/widgets/hotel/hotel_overview_section.dart';
-import 'package:meosemptyflutter/widgets/hotel/hotel_amenities_section.dart';
-import 'package:meosemptyflutter/widgets/hotel/hotel_rooms_section.dart';
-import 'package:intl/intl.dart'; // Add this import
 
 class HotelScreen extends StatefulWidget {
   final String hotelName;
@@ -23,53 +20,47 @@ class HotelScreen extends StatefulWidget {
 class _HotelScreenState extends State<HotelScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
-  
+
   // Keys to identify sections for scrolling
   final GlobalKey _overviewKey = GlobalKey();
   final GlobalKey _amenitiesKey = GlobalKey();
   final GlobalKey _roomsKey = GlobalKey();
-  
+  final GlobalKey _policyKey = GlobalKey();
+  final GlobalKey _locationKey = GlobalKey();
+
   int _currentTabIndex = 0;
   bool _isScrolling = false;
   bool _showDetailedAppBar = false;
-  
+  bool _showBottomBar = true;
+  bool _hasVisitedRoomsSection = false; // New flag to track if user has visited rooms section
+
   // Mock data for reservation details
   late DateTime _checkInDate;
   late DateTime _checkOutDate;
-  int _guestCount = 2;
+  final int _guestCount = 2;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    
-    // Listen to scroll position to update active tab
-    _scrollController.addListener(_updateTabOnScroll);
-    
-    // Listen to tab changes
-    _tabController.addListener(_handleTabChange);
-    
+    _tabController = TabController(length: 5, vsync: this);
+
     // Initialize dates
     _checkInDate = DateTime.now().add(const Duration(days: 7));
     _checkOutDate = DateTime.now().add(const Duration(days: 10));
-    
-    // Add listener for app bar transformation
-    _scrollController.addListener(_handleScrollForAppBar);
+
+    _scrollController.addListener(_handleScroll);
   }
-  
+
   @override
   void dispose() {
-    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
-    _scrollController.removeListener(_updateTabOnScroll);
-    _scrollController.removeListener(_handleScrollForAppBar);
     _scrollController.dispose();
     super.dispose();
   }
-  
-  // Update app bar based on scroll position
-  void _handleScrollForAppBar() {
-    // Show detailed app bar when scroll offset is greater than 100
+
+  // Combined scroll handler for both app bar and bottom bar
+  void _handleScroll() {
+    // App bar handling
     if (_scrollController.hasClients) {
       bool showDetail = _scrollController.offset > 100;
       if (showDetail != _showDetailedAppBar) {
@@ -77,105 +68,107 @@ class _HotelScreenState extends State<HotelScreen> with SingleTickerProviderStat
           _showDetailedAppBar = showDetail;
         });
       }
-    }
-  }
-  
-  // Handle tab controller changes
-  void _handleTabChange() {
-    if (_tabController.indexIsChanging || _tabController.index != _currentTabIndex) {
-      setState(() {
-        _currentTabIndex = _tabController.index;
-      });
-      
-      if (!_isScrolling) {
-        _scrollToCurrentSection();
-      }
-    }
-  }
-  
-  void _scrollToCurrentSection() {
-    switch (_currentTabIndex) {
-      case 0:
-        _scrollToSection(_overviewKey);
-        break;
-      case 1:
-        _scrollToSection(_amenitiesKey);
-        break;
-      case 2:
-        _scrollToSection(_roomsKey);
-        break;
-    }
-  }
-  
-  // Updates the tab based on scroll position
-  void _updateTabOnScroll() {
-    if (!_scrollController.hasClients) return;
-    
-    _isScrolling = true;
-    
-    // Using a debounced approach to prevent excessive tab updates
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!mounted) return;
-      
-      final overviewContext = _overviewKey.currentContext;
-      final amenitiesContext = _amenitiesKey.currentContext;
-      final roomsContext = _roomsKey.currentContext;
-      
-      if (overviewContext == null || amenitiesContext == null || roomsContext == null) {
-        _isScrolling = false;
-        return;
-      }
-      
-      final RenderBox overviewBox = overviewContext.findRenderObject() as RenderBox;
-      final RenderBox amenitiesBox = amenitiesContext.findRenderObject() as RenderBox;
-      final RenderBox roomsBox = roomsContext.findRenderObject() as RenderBox;
-      
-      final overviewPos = overviewBox.localToGlobal(Offset.zero).dy;
-      final amenitiesPos = amenitiesBox.localToGlobal(Offset.zero).dy;
-      final roomsPos = roomsBox.localToGlobal(Offset.zero).dy;
-      
-      // The offset to account for the app bar and tabs height
-      final offsetHeight = 150.0;
-      
-      int newIndex;
-      
-      if (roomsPos < offsetHeight) {
-        newIndex = 2; // Rooms section
-      } else if (amenitiesPos < offsetHeight) {
-        newIndex = 1; // Amenities section
-      } else {
-        newIndex = 0; // Overview section
-      }
-      
-      if (newIndex != _currentTabIndex) {
+
+      // Bottom bar handling
+      // Get the position of the rooms section
+      double? roomsPosition = _getPositionFromKey(_roomsKey);
+      if (roomsPosition != null) {
+        final scrollPosition = _scrollController.offset;
+
+        // Show bottom bar when at the top or hide it when rooms section is visible
+        // or user has visited rooms section but not at the top
+        print('Scroll Position: $scrollPosition');
         setState(() {
-          _currentTabIndex = newIndex;
-          _tabController.animateTo(newIndex, duration: Duration.zero);
+          if (scrollPosition < 818) {
+            // Show when user is at the top of the page
+            _showBottomBar = true;
+          } else if (scrollPosition > 1620) {
+            // Hide if user has visited rooms section and not at top
+            _showBottomBar = false;
+          } else {
+            _showBottomBar = false;
+          }
         });
       }
-      
-      _isScrolling = false;
-    });
+    }
   }
-  
-  // Scroll to a specific section
-  void _scrollToSection(GlobalKey key) {
-    final context = key.currentContext;
-    if (context != null) {
-      _isScrolling = true;
-      
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-        alignment: 0.0,
-      ).then((_) {
-        // Add a small delay to prevent immediate scroll detection
-        Future.delayed(const Duration(milliseconds: 500), () {
-          _isScrolling = false;
+
+  // Scroll to the rooms section
+  void _scrollToRooms() {
+    if (_roomsKey.currentContext != null) {
+      final roomsPosition = _getPositionFromKey(_roomsKey);
+      if (roomsPosition != null) {
+        setState(() {
+          _isScrolling = true;
         });
+
+        _scrollController
+            .animateTo(
+          roomsPosition - 100, // Offset to account for app bar
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        )
+            .then((_) {
+          if (mounted) {
+            setState(() {
+              _isScrolling = false;
+              _currentTabIndex = 2; // Update to Rooms tab
+              _tabController.animateTo(2);
+              _showBottomBar = false; // Hide bottom bar after scrolling
+            });
+          }
+        });
+      }
+    }
+  }
+
+  void _updateTabOnScroll() {
+    if (!_scrollController.hasClients || _isScrolling) return;
+
+    final scrollPosition = _scrollController.offset;
+    final viewportHeight = _scrollController.position.viewportDimension;
+
+    // Get the positions of all sections
+    final positions = [
+      _getPositionFromKey(_overviewKey),
+      _getPositionFromKey(_amenitiesKey),
+      _getPositionFromKey(_roomsKey),
+      _getPositionFromKey(_policyKey),
+      _getPositionFromKey(_locationKey),
+    ];
+
+    // Find the section that is most visible in the viewport
+    int visibleSectionIndex = 0;
+
+    for (int i = 0; i < positions.length; i++) {
+      if (positions[i] != null) {
+        final position = positions[i]!;
+        if (position <= scrollPosition + viewportHeight / 2 &&
+            ((positions[visibleSectionIndex] == null) ||
+                position > positions[visibleSectionIndex]! ||
+                visibleSectionIndex == 0)) {
+          visibleSectionIndex = i;
+        }
+      }
+    }
+
+    // Update tab if needed
+    if (visibleSectionIndex != _currentTabIndex) {
+      setState(() {
+        _currentTabIndex = visibleSectionIndex;
+        _tabController.animateTo(visibleSectionIndex, duration: Duration.zero);
       });
     }
+  }
+
+  // Helper method to get scroll position from a key
+  double? _getPositionFromKey(GlobalKey key) {
+    final context = key.currentContext;
+    if (context == null) return null;
+
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final position = box.localToGlobal(Offset.zero).dy;
+    return position;
   }
 
   @override
@@ -183,136 +176,255 @@ class _HotelScreenState extends State<HotelScreen> with SingleTickerProviderStat
     final dateFormatter = DateFormat('MMM dd');
     final formattedCheckIn = dateFormatter.format(_checkInDate);
     final formattedCheckOut = dateFormatter.format(_checkOutDate);
-    
+
     return Scaffold(
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
-          // Mark as scrolling during user scroll interactions
+          // Only process scroll notifications when not programmatically scrolling
+          if (_isScrolling) return false;
+
           if (notification is ScrollStartNotification) {
-            _isScrolling = true;
+            _isScrolling = false; // Don't set to true here to allow tab updates during user scrolling
           } else if (notification is ScrollEndNotification) {
-            // Add delay before setting isScrolling to false to allow position to settle
             Future.delayed(const Duration(milliseconds: 200), () {
-              _isScrolling = false;
-              _updateTabOnScroll();
+              if (mounted) _updateTabOnScroll();
             });
           }
           return false;
         },
-        child: NestedScrollView(
+        child: CustomScrollView(
           controller: _scrollController,
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                expandedHeight: 250.0,
-                floating: false,
-                pinned: true,
-                backgroundColor: widget.color,
-                title: AnimatedOpacity(
-                  opacity: _showDetailedAppBar ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: _showDetailedAppBar ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.hotelName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 250.0,
+              floating: false,
+              pinned: true,
+              backgroundColor: widget.color,
+              title: AnimatedOpacity(
+                opacity: _showDetailedAppBar ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: _showDetailedAppBar
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "$formattedCheckIn - $formattedCheckOut • $_guestCount guests",
+                            widget.hotelName,
                             style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.normal,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ) : null,
-                ),
-                flexibleSpace: FlexibleSpaceBar(
-                  title: _showDetailedAppBar 
-                      ? null 
-                      : Text(widget.hotelName),
-                  background: Stack(
-                    children: [
-                      Container(
-                        color: widget.color,
-                        child: Center(
-                          child: Icon(
-                            Icons.hotel,
-                            size: 100,
-                            color: Colors.white,
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                "$formattedCheckIn - $formattedCheckOut • $_guestCount guests",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ],
                           ),
+                        ],
+                      )
+                    : null,
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  children: [
+                    Container(
+                      color: widget.color,
+                      child: Center(
+                        child: Icon(
+                          Icons.hotel,
+                          size: 100,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
-                  child: Container(
-                    color: Colors.white,
-                    child: TabBar(
-                      controller: _tabController,
-                      labelColor: widget.color,
-                      unselectedLabelColor: Colors.grey,
-                      indicatorColor: widget.color,
-                      tabs: const [
-                        Tab(text: 'Overview'),
-                        Tab(text: 'Amenities'),
-                        Tab(text: 'Rooms'),
-                      ],
-                      onTap: (index) {
-                        if (index == _currentTabIndex) {
-                          // If tapping the current tab, scroll to the top of that section
-                          _scrollToCurrentSection();
-                        }
-                        // The TabController listener will handle other tab changes
-                      },
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ];
-          },
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Overview Section
-                  HotelOverviewSection(
-                    hotelName: widget.hotelName,
-                    index: widget.index,
-                    sectionKey: _overviewKey,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: widget.color,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: widget.color,
+                    isScrollable: true,
+                    tabs: const [
+                      Tab(text: 'Overview'),
+                      Tab(text: 'Amenities'),
+                      Tab(text: 'Rooms'),
+                      Tab(text: 'Hotel Policy'),
+                      Tab(text: 'Location'),
+                    ],
+                    onTap: (index) {
+                      // Scroll to the corresponding section when tab is tapped
+                      setState(() {
+                        _isScrolling = true;
+                        _currentTabIndex = index;
+                      });
+
+                      final keys = [
+                        _overviewKey,
+                        _amenitiesKey,
+                        _roomsKey,
+                        _policyKey,
+                        _locationKey,
+                      ];
+
+                      if (keys[index].currentContext != null) {
+                        final position = _getPositionFromKey(keys[index]);
+                        if (position != null) {
+                          _scrollController
+                              .animateTo(
+                            position - 100, // Offset to account for app bar
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                          )
+                              .then((_) {
+                            if (mounted) {
+                              setState(() {
+                                _isScrolling = false;
+                              });
+                            }
+                          });
+                        }
+                      }
+                    },
                   ),
-                  
-                  const Divider(height: 24),
-                  
-                  // Amenities Section
-                  HotelAmenitiesSection(
-                    color: widget.color,
-                    sectionKey: _amenitiesKey,
-                  ),
-                  
-                  const Divider(height: 24),
-                  
-                  // Rooms Section
-                  HotelRoomsSection(
-                    color: widget.color,
-                    sectionKey: _roomsKey,
-                  ),
-                ],
+                ),
               ),
             ),
+
+            // Padding for the content
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Overview Section
+                  Container(
+                    key: _overviewKey,
+                    height: 600,
+                    margin: const EdgeInsets.symmetric(vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Overview Section',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+
+                  // Amenities Section
+                  Container(
+                    key: _amenitiesKey,
+                    height: 600,
+                    margin: const EdgeInsets.symmetric(vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.green[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Amenities Section',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+
+                  // Rooms Section
+                  Container(
+                    key: _roomsKey,
+                    height: 600,
+                    margin: const EdgeInsets.symmetric(vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Rooms Section',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+
+                  // Hotel Policy Section
+                  Container(
+                    key: _policyKey,
+                    height: 600,
+                    margin: const EdgeInsets.symmetric(vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Hotel Policy Section',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+
+                  // Location Section
+                  Container(
+                    key: _locationKey,
+                    height: 600,
+                    margin: const EdgeInsets.symmetric(vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Location Section',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+      // Add bottom bar with updated visibility logic
+      bottomNavigationBar: AnimatedContainer(
+        height: _showBottomBar ? 80 : 0,
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, -1),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: _scrollToRooms,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.color,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text(
+            'See All Rooms',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ),
