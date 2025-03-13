@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:meosemptyflutter/scroll_to_hide_widget.dart';
-import 'package:meosemptyflutter/tabs/home_tab.dart';
-import 'package:meosemptyflutter/tabs/search_tab.dart';
 import 'package:meosemptyflutter/tabs/notifications_tab.dart';
-import 'package:meosemptyflutter/tabs/profile_tab.dart';
+import 'package:meosemptyflutter/tabs/search_tab.dart';
+import 'package:meosemptyflutter/tabs/settings_tab.dart';
+import 'tabs/travel_home_tab.dart'; // We'll create this new tab
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MainApp());
+void main() {
+  runApp(const MyApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      title: 'Travel App',
+      color: Colors.white,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        useMaterial3: true,
       ),
       home: const HomeScreen(),
     );
@@ -45,10 +45,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _scrollController = ScrollController();
 
     _screens = [
-      HomeTab(scrollController: _scrollController),
+      TravelHomeTab(scrollController: _scrollController), // Our new home tab
       SearchTab(),
       NotificationsTab(),
-      ProfileTab(),
+      SettingsTab(),
     ];
   }
 
@@ -106,8 +106,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     text: 'Noti',
                   ),
                   GButton(
-                    icon: Icons.person,
-                    text: 'Profile',
+                    icon: Icons.settings,
+                    text: 'Settings',
                   ),
                 ],
                 selectedIndex: _currentIndex,

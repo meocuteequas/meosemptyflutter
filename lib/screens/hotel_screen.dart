@@ -77,7 +77,6 @@ class _HotelScreenState extends State<HotelScreen> with SingleTickerProviderStat
 
         // Show bottom bar when at the top or hide it when rooms section is visible
         // or user has visited rooms section but not at the top
-        print('Scroll Position: $scrollPosition');
         setState(() {
           if (scrollPosition < 818) {
             // Show when user is at the top of the page
@@ -281,19 +280,7 @@ class _HotelScreenState extends State<HotelScreen> with SingleTickerProviderStat
                       if (keys[index].currentContext != null) {
                         final position = _getPositionFromKey(keys[index]);
                         if (position != null) {
-                          _scrollController
-                              .animateTo(
-                            position - 100, // Offset to account for app bar
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          )
-                              .then((_) {
-                            if (mounted) {
-                              setState(() {
-                                _isScrolling = false;
-                              });
-                            }
-                          });
+                          _scrollController.jumpTo(position);
                         }
                       }
                     },
