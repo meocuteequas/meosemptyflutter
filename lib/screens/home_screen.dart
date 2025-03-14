@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'hotel_list_screen.dart';
 import 'flight_list_screen.dart';
+import 'hotel_search_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -30,7 +31,7 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const HotelListScreen(),
+                    builder: (context) => const HotelSearchScreen(),
                   ),
                 );
               },

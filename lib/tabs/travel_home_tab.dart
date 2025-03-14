@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meosemptyflutter/screens/hotel_search_screen.dart';
 import '../screens/hotel_list_screen.dart';
 import '../screens/flight_list_screen.dart';
 
@@ -58,7 +59,7 @@ class TravelHomeTab extends StatelessWidget {
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HotelListScreen(),
+                      builder: (context) => const HotelSearchScreen(),
                     ),
                   ),
                 ),
